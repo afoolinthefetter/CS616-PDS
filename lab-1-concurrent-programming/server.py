@@ -31,6 +31,7 @@ class MyScheduler:
     def log_operation(self, requestCount, operation_type, room, timeslot, status, message):
         log_entry = [requestCount, operation_type, room, timeslot, status, message]
         self.log.append(log_entry)
+        return
 
     def write_log_to_csv(self, filename):
         with open(filename, mode='w', newline='') as file:
@@ -61,31 +62,44 @@ class ClassroomBooking:
         self.time_list = self.time_list[:-1]
 
     def initialize_classroom(self, classroom_id):
-        with self.lock:
+        print("I am here without a lock\n\n")
+        apple = self.lock.acquire()
+        print("this is apple", apple)
+        try:
+            print("I have a lock to play with\n\n")
             if classroom_id not in self.classrooms:
                 self.classrooms[classroom_id] = {i: None for i in self.time_list}
                 print(self.classrooms[2])
-                
+
+        finally:
+            self.lock.release()
+            print("I am done with the lock\n\n")    
     def book_classroom(self, classroom_id, start_time) -> int:
+        print("Here 2\n\n")
         with self.lock:
             self.requestCount += 1
             end_time = self.get_end_time(start_time)
             timeslot = f"{start_time}-{end_time}"
+
             if classroom_id not in self.classrooms:
-                self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, INVALID_REQUEST,)
+                # self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, INVALID_REQUEST,'')
                 self.initialize_classroom(classroom_id)
+                print("Initilizing \n\n")
 
             if start_time not in self.classrooms[classroom_id]:
-                self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, INVALID_REQUEST,)
+                # self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, INVALID_REQUEST,'')
+                print("Start time not in classroom\n\n")
                 return -3
-
+                
             if self.classrooms[classroom_id][start_time] != None:
-                self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, ALREADY_BOOKED,)
+                # self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, ALREADY_BOOKED,'')
+                print("Already booked\n\n")
                 return -1
             
             #if no problem, then book the class as follows
             self.classrooms[classroom_id][start_time] = self.requestCount
-            self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, OK,)
+            self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, OK,'')
+            print(self.classrooms)
             return 0
         
     def cancel_classroom(self, classroom_id, start_time) -> int:
@@ -94,26 +108,26 @@ class ClassroomBooking:
             end_time = self.get_end_time(start_time)
             timeslot = f"{start_time}-{end_time}"
             if classroom_id not in self.classrooms:
-                self.scheduler.log_operation(self.requestCount,CANCEL, classroom_id, timeslot, INVALID_REQUEST,)
+                self.scheduler.log_operation(self.requestCount,CANCEL, classroom_id, timeslot, INVALID_REQUEST,'')
                 return -3
 
             if start_time not in self.classrooms[classroom_id]:
-                self.scheduler.log_operation(self.requestCount,CANCEL, classroom_id, timeslot, INVALID_REQUEST,)
+                self.scheduler.log_operation(self.requestCount,CANCEL, classroom_id, timeslot, INVALID_REQUEST,'')
                 return -3
 
             if self.classrooms[classroom_id][start_time] is None:
-                self.scheduler.log_operation(self.requestCount,CANCEL, classroom_id, timeslot, INVALID_REQUEST,)
+                self.scheduler.log_operation(self.requestCount,CANCEL, classroom_id, timeslot, INVALID_REQUEST,'')
                 return -3
 
             #if no problem, then cancel the class as follows
             #check if twenty requests have been made since the booking
             if self.classrooms[classroom_id][start_time] != None:
                 if (self.classrooms[classroom_id][start_time] + 20) >= self.requestCount:
-                    self.scheduler.log_operation(self.requestCount,CANCEL, classroom_id, timeslot, CANCEL_WITHIN_COOL_DOWN,)
+                    self.scheduler.log_operation(self.requestCount,CANCEL, classroom_id, timeslot, CANCEL_WITHIN_COOL_DOWN,'')
                     return -2
                 
                 self.classrooms[classroom_id][start_time] = None
-                self.scheduler.log_operation(self.requestCount,CANCEL, classroom_id, timeslot, OK,)
+                self.scheduler.log_operation(self.requestCount,CANCEL, classroom_id, timeslot, OK,'')
                 return 0
 
             return -1
@@ -136,8 +150,9 @@ class ClassroomBooking:
         return time.strftime('%H:%M', end_time_obj)
     
     def get_end_time(self, start_time):
-        start_time += timedelta(hours=self.classDuration)
-        return start_time.strftime('%H:%M')
+        time_object = datetime.strptime(start_time, '%H:%M')
+        time_object += timedelta(hours=self.classDuration)
+        return time_object.strftime('%H:%M')
 
 
             
@@ -147,27 +162,28 @@ def threaded(c, addr, classroom_booking: ClassroomBooking, ):
      try:  
         data = c.recv(1024)
         request = data.decode('utf-8').split(',')
+        print(request)
         requestLabel = request[1]
         if requestLabel == 'BOOK':
+            print("Here\n\n")
             start_time = request[3].split('-')[0]
             classroom_id = int(request[2])
-            classroom_booking.book_classroom(classroom_id, start_time)
+            message = classroom_booking.book_classroom(classroom_id, start_time)
         if requestLabel == 'CANCEL':
             start_time = request[3].split('-')[0]
             classroom_id = int(request[2])
-            classroom_booking.cancel_classroom(classroom_id, start_time)
+            message = classroom_booking.cancel_classroom(classroom_id, start_time)
         if requestLabel == 'GET':
-            classroom_booking.status_classroom()
+            message = classroom_booking.status_classroom()
      except IOError as e:  
         if e.errno == errno.EPIPE:  
             c.close()
             print("Pipe Error Address:", addr)
             return
 
-     time.sleep(10)
-
+     print(message)
      try:  
-         c.send(data)
+         c.send(message)
      except IOError as e:  
         if e.errno == errno.EPIPE:  
             c.close()
