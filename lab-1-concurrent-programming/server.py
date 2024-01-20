@@ -23,6 +23,8 @@ BOOK = 'BOOK'
 CANCEL = 'CANCEL'
 GET = 'GET'
 
+#use a global lock to synchronize access to the shared resource
+lock = threading.Lock()
 
 class MyScheduler:
     def __init__(self):
@@ -51,7 +53,7 @@ class ClassroomBooking:
         self.endTime = ending_h_m
         self.classDuration = classDuration
         self.classrooms = {}
-        self.lock = threading.Lock()
+        self.lock = lock
         self.startTime = datetime.now().replace(hour=STARTING_H_M[0], minute=STARTING_H_M[1])
         self.endTime = datetime.now().replace(hour=ENDING_H_M[0], minute=ENDING_H_M[1])
         self.time_list = []
@@ -62,43 +64,33 @@ class ClassroomBooking:
         self.time_list = self.time_list[:-1]
 
     def initialize_classroom(self, classroom_id):
-        print("I am here without a lock\n\n")
-        apple = self.lock.acquire()
-        print("this is apple", apple)
-        try:
-            print("I have a lock to play with\n\n")
-            if classroom_id not in self.classrooms:
-                self.classrooms[classroom_id] = {i: None for i in self.time_list}
-                print(self.classrooms[2])
-
-        finally:
-            self.lock.release()
-            print("I am done with the lock\n\n")    
+        if classroom_id not in self.classrooms:
+            self.classrooms[classroom_id] = {i: None for i in self.time_list}
+            print(self.classrooms)
+            print("Initialized\n\n")    
     def book_classroom(self, classroom_id, start_time) -> int:
-        print("Here 2\n\n")
         with self.lock:
             self.requestCount += 1
             end_time = self.get_end_time(start_time)
             timeslot = f"{start_time}-{end_time}"
 
             if classroom_id not in self.classrooms:
-                # self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, INVALID_REQUEST,'')
+                self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, INVALID_REQUEST,'')
                 self.initialize_classroom(classroom_id)
-                print("Initilizing \n\n")
+
 
             if start_time not in self.classrooms[classroom_id]:
-                # self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, INVALID_REQUEST,'')
-                print("Start time not in classroom\n\n")
+                self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, INVALID_REQUEST,'')
                 return -3
                 
             if self.classrooms[classroom_id][start_time] != None:
-                # self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, ALREADY_BOOKED,'')
-                print("Already booked\n\n")
+                self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, ALREADY_BOOKED,'')
                 return -1
             
             #if no problem, then book the class as follows
             self.classrooms[classroom_id][start_time] = self.requestCount
             self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, OK,'')
+            print(self.scheduler.log)
             print(self.classrooms)
             return 0
         
@@ -165,7 +157,6 @@ def threaded(c, addr, classroom_booking: ClassroomBooking, ):
         print(request)
         requestLabel = request[1]
         if requestLabel == 'BOOK':
-            print("Here\n\n")
             start_time = request[3].split('-')[0]
             classroom_id = int(request[2])
             message = classroom_booking.book_classroom(classroom_id, start_time)
@@ -183,7 +174,8 @@ def threaded(c, addr, classroom_booking: ClassroomBooking, ):
 
      print(message)
      try:  
-         c.send(message)
+         c.send(str(message).encode('utf-8'))
+         
      except IOError as e:  
         if e.errno == errno.EPIPE:  
             c.close()
@@ -214,8 +206,6 @@ def Main():
         # lock acquired by client
         #print_lock.acquire()
         print('Connected to :', addr[0], ':', addr[1])
-        
-        
         
         # Start a new thread and return its identifier
         start_new_thread(threaded, (c,addr,classrooms,))
