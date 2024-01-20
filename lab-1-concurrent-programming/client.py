@@ -1,19 +1,25 @@
 import socket
 import csv
 import time
+import sys
 
 # Server configuration
 host = '127.0.0.1'
 port = 12345
+
+# Check if the CSV file name is provided as a command-line argument
+if len(sys.argv) != 2:
+    print("Usage: python script.py <csv_file>")
+    sys.exit(1)
+
+# Extract the CSV file name from the command-line arguments
+csv_file_path = sys.argv[1]
 
 # Create a socket object
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect to the server
 s.connect((host, port))
-
-# Read data from the CSV file without pandas
-csv_file_path = 'test_case_1.csv'  # Replace with the actual path to your CSV file
 
 # Send requests to the server serially with a time delay
 with open(csv_file_path, 'r') as csvfile:
@@ -31,9 +37,6 @@ with open(csv_file_path, 'r') as csvfile:
         print(f"Sent: {request}")
         print(f"Received: {response}")
         print()
-
-        # Add a time delay of 1 second
-        time.sleep(1)
 
 # Close the socket connection
 s.close()

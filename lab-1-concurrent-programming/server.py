@@ -2,8 +2,7 @@ import socket
 from _thread import *
 import threading
 import time
-from datetime import datetime, timedelta
-import sys, errno  
+from datetime import datetime, timedelta  
 import csv 
 
 NUMBER_OF_CLASSROOMS = 5
@@ -24,9 +23,8 @@ CANCEL = 'CANCEL'
 GET = 'GET'
 
 #use a global lock to synchronize access to the shared resource
-lock = threading.Lock()
 
-class MyScheduler:
+class Scheduler:
     def __init__(self):
         self.log = []
 
@@ -45,7 +43,7 @@ class MyScheduler:
 
 
 class ClassroomBooking:
-    def __init__(self, numberOfClasses, starting_h_m, ending_h_m , classDuration, scheduler:MyScheduler):
+    def __init__(self, numberOfClasses, starting_h_m, ending_h_m , classDuration, scheduler:Scheduler):
         self.scheduler = scheduler
         self.requestCount = 0
         self.classes = numberOfClasses
@@ -53,7 +51,7 @@ class ClassroomBooking:
         self.endTime = ending_h_m
         self.classDuration = classDuration
         self.classrooms = {}
-        self.lock = lock
+        self.lock = threading.Lock()
         self.startTime = datetime.now().replace(hour=STARTING_H_M[0], minute=STARTING_H_M[1])
         self.endTime = datetime.now().replace(hour=ENDING_H_M[0], minute=ENDING_H_M[1])
         self.time_list = []
@@ -65,9 +63,8 @@ class ClassroomBooking:
 
     def initialize_classroom(self, classroom_id):
         if classroom_id not in self.classrooms:
-            self.classrooms[classroom_id] = {i: None for i in self.time_list}
-            print(self.classrooms)
-            print("Initialized\n\n")    
+            self.classrooms[classroom_id] = {i: None for i in self.time_list}    
+    
     def book_classroom(self, classroom_id, start_time) -> int:
         with self.lock:
             self.requestCount += 1
@@ -75,7 +72,6 @@ class ClassroomBooking:
             timeslot = f"{start_time}-{end_time}"
 
             if classroom_id not in self.classrooms:
-                self.scheduler.log_operation(self.requestCount,BOOK, classroom_id, timeslot, INVALID_REQUEST,'')
                 self.initialize_classroom(classroom_id)
 
 
@@ -151,7 +147,7 @@ class ClassroomBooking:
 
 
 def threaded(c, addr, classroom_booking: ClassroomBooking, ):
-     try:  
+     for i in range(0,300):
         data = c.recv(1024)
         request = data.decode('utf-8').split(',')
         print(request)
@@ -166,25 +162,11 @@ def threaded(c, addr, classroom_booking: ClassroomBooking, ):
             message = classroom_booking.cancel_classroom(classroom_id, start_time)
         if requestLabel == 'GET':
             message = classroom_booking.status_classroom()
-     except IOError as e:  
-        if e.errno == errno.EPIPE:  
-            c.close()
-            print("Pipe Error Address:", addr)
-            return
-
-     print(message)
-     try:  
-         c.send(str(message).encode('utf-8'))
-         
-     except IOError as e:  
-        if e.errno == errno.EPIPE:  
-            c.close()
-            print("Pipe Error Address:", addr)
-            return
-
-    # connection closed
+        c.send(str(message).encode('utf-8'))
+        classroom_booking.scheduler.write_log_to_csv('log.csv')
      c.close()
-     print("Connection corresponding to address closed:", addr)
+
+
 
 
 def Main():
@@ -195,22 +177,15 @@ def Main():
     print("socket bound to port", port)
 
     #initialize the classroom booking system
-    scheduler = MyScheduler()
+    scheduler = Scheduler()
     classrooms = ClassroomBooking(NUMBER_OF_CLASSROOMS, STARTING_H_M, ENDING_H_M, LENGTH_OF_CLASS_IN_HOURS, scheduler)
         
     s.listen(5)
     print("socket is listening")
     while True:
         c, addr = s.accept()
- 
-        # lock acquired by client
-        #print_lock.acquire()
         print('Connected to :', addr[0], ':', addr[1])
-        
-        # Start a new thread and return its identifier
         start_new_thread(threaded, (c,addr,classrooms,))
-
-    s.close()
 
 
 if __name__ == '__main__':
