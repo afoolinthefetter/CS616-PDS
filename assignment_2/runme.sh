@@ -2,15 +2,18 @@
 
 # Path to the executable
 executable_path="./client"
-
+# executable_server_path="./server"
 # Number of times to run the executable
-num_runs=200
+num_runs=10
+
+#Run the server
+# $executable_server_path &
 
 # Loop to run the executable multiple times
 for ((i=1; i<=$num_runs; i++))
 do
     echo "Running iteration $i..."
-    $executable_path  # Add any command line arguments here
+    $executable_path &  # Add any command line arguments here
     echo "------------------"
 done
 

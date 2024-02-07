@@ -12,11 +12,11 @@ void handle_connection(int client_socket, int thread_id) {
     // Receive data from the client
     while ((bytes_received = recv(client_socket, buffer, sizeof(buffer), 0)) > 0) {
         // Echo the received data back to the client
-        send(client_socket, buffer, bytes_received, 0);
         printf("Waiting for 5 seconds");
         sleep(5);
+        send(client_socket, buffer, bytes_received, 0);
     }
-    
+    printf("Thread %d is done handling the connection\n", thread_id);
     
     // Close the client socket when done
     close(client_socket);

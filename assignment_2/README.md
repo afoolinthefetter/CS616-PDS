@@ -1,1 +1,1 @@
-OpenMP based concurrent connection handler
+# OpenMP based concurrent connection handler
