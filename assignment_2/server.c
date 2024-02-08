@@ -173,7 +173,7 @@ void make_match(){
 }
 
 void match_for_single(Request request){
-    int check;
+    int check1,check2;
     int paired = 0;
     if (waiting_list_index < 2){
         return;
@@ -181,8 +181,9 @@ void match_for_single(Request request){
     temp_checked_list[temp_checked_list_index] = request;
     temp_checked_list_index++;
     for (int i = 0; i < waiting_list_index; ++i) {
-        check = is_in_checked_list(waiting_list[i].player_id);
-        if (check != 1){
+        check1 = is_in_checked_list(waiting_list[i].player_id);
+        check2 = is_in_temp_checked_list(waiting_list[i].player_id);
+        if (check1 != 0 || check2 != 0){
             continue;
         }
         char preference = waiting_list[i].preference;
@@ -202,9 +203,10 @@ void match_for_single(Request request){
     //to clarify that there was no match for the caller function
     if (paired == 0){
         temp_checked_list_index = 0;
+        return;
     }
     //else thing to enter the matched into the matched_list
-
+    add_to_matched_list();
     return;
 }
 
@@ -355,7 +357,6 @@ void add_to_matched_list(){
         matched_list[matched_list_index].game_type = 'D';
     }
     matched_list_index++;
-    printf("added to matched list, now we have %d matches", matched_list_index);
     
     //We also havr to occupy the court
     for (int i = 0; i < NUMBER_OF_COURTS; ++i) {
