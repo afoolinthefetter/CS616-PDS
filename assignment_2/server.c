@@ -260,15 +260,14 @@ void match_for_double(Request request){
 
 void add_to_matched_list(){
 
-    int late_arriving_player = 0;
+    int late_arriving_time = 0;
     int late_arriving_player_index = 0;
     for(int i = 0; i < temp_checked_list_index; i++){
-        if (temp_checked_list[i].arrival_time > late_arriving_player){
-            late_arriving_player = temp_checked_list[i].arrival_time;
+        if (temp_checked_list[i].arrival_time > late_arriving_time){
+            late_arriving_time = temp_checked_list[i].arrival_time;
             late_arriving_player_index = i;
         }
     }
-    printf("late arriving player is %d\n", late_arriving_player_index);
 
     //from the latest arriving player, we can determine the game start time
     //initially pick a court that is empty
@@ -280,7 +279,7 @@ void add_to_matched_list(){
         int minimum_difference = 0;
         int difference = 0;
         for (int i = 0; i < NUMBER_OF_COURTS; ++i) {
-            if(courts[i].occupied == 1 && courts[i].end_time <= late_arriving_player){
+            if(courts[i].occupied == 1 && courts[i].end_time <= late_arriving_time){
                 difference = temp_checked_list[late_arriving_player_index].arrival_time - courts[i].end_time;
                 if (difference < minimum_difference){
                     minimum_difference = difference;
@@ -446,6 +445,8 @@ void handle_connection(int client_socket, int thread_id) {
 
 
 int main() {
+    initialize_courts();
+    
     FILE *file;
     char *line = NULL;
     size_t len = 0;
