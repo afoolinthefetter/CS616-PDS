@@ -2,9 +2,10 @@
 
 # Path to the executable
 executable_path="./client"
-# executable_server_path="./server"
 # Number of times to run the executable
 num_runs=10
+
+# open -a Terminal "./server"
 
 #Run the server
 # $executable_server_path &
