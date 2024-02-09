@@ -135,9 +135,11 @@ void make_match(){
             continue;
         }
         
-        // if (check_empty_court(waiting_list[i].arrival_time) == 0){
-        //     continue;
-        // }
+        //here we should make sure that the selected one can get an empty court
+        if (empty_court_ask(waiting_list[i].arrival_time) == 0){
+            continue;
+        }
+
         printf("matching for player %d\n", waiting_list[i].player_id);
 
         switch (waiting_list[i].preference)
@@ -278,7 +280,7 @@ void add_to_matched_list(){
     //this property was guarenteed initialy before we started to match for it
     int court_number = is_there_empty_court();
     if (court_number == 0){
-        int minimum_difference = 0;
+        int minimum_difference = 999999;
         int difference = 0;
         for (int i = 0; i < NUMBER_OF_COURTS; ++i) {
             if(courts[i].occupied == 1 && courts[i].end_time <= late_arriving_time){
