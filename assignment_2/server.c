@@ -395,112 +395,112 @@ void handle_connection(int client_socket, int thread_id) {
     close(client_socket);
 }
 
-// int main() {
-//     int server_socket, client_socket;
-//     struct sockaddr_in server_addr, client_addr;
-//     socklen_t client_len = sizeof(client_addr);
-
-//     // Create a TCP socket
-//     server_socket = socket(AF_INET, SOCK_STREAM, 0);
-
-//     // Configure the server address
-//     server_addr.sin_family = AF_INET;
-//     server_addr.sin_addr.s_addr = INADDR_ANY;
-//     server_addr.sin_port = htons(8080);
-
-//     // Bind the socket
-//     bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
-
-//     // Listen for incoming connections
-//     listen(server_socket, 5);
-
-//     printf("Server listening on port 8080...\n");
-
-//     // Number of threads to create
-//     const int num_threads =100;
-
-//     // Accept connections in parallel using OpenMP
-//     #pragma omp parallel num_threads(num_threads)
-//     {   
-//         if (omp_get_thread_num() == 0) {
-//             printf("Number of threads: %d\n", omp_get_num_threads());
-//         }
-//         // Each thread has its own copy of the server socket
-//         int private_server_socket = server_socket;
-
-//         // Each thread listens and accepts connections independently
-//         #pragma omp for
-//         for (int i = 0; i < num_threads; ++i) {
-//             // Accept a connection
-//             client_socket = accept(private_server_socket, (struct sockaddr*)&client_addr, &client_len);
-
-//             // Handle the connection in a separate function
-//             #pragma omp critical
-//             handle_connection(client_socket, omp_get_thread_num());
-//         }
-//     }
-
-//     // Close the server socket when done
-//     close(server_socket);
-
-//     return 0;
-// }
-
-
 int main() {
-    initialize_courts();
-    
-    FILE *file;
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t read;
+    int server_socket, client_socket;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t client_len = sizeof(client_addr);
 
-    // Open the file for reading
-    file = fopen("input.csv", "r");
-    if (file == NULL) {
-        fprintf(stderr, "Error opening the file\n");
-        return 1;
-    }
+    // Create a TCP socket
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
 
-    // Ignore the first line
-    if ((read = getline(&line, &len, file)) == -1) {
-        fprintf(stderr, "Error reading the first line\n");
-        fclose(file);
-        free(line);
-        return 1;
-    }
-    int not_much = 2;
-    // Read and process each line
-    while ((read = getline(&line, &len, file)) != -1) {
-    // while(not_much > 0){
-        Request request;
-        sscanf(line, "%d,%d,%c,%c", &request.player_id, &request.arrival_time, &request.gender, &request.preference);
+    // Configure the server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(8080);
 
-        // Do something with the Request struct (e.g., print the values)
-        printf("Player ID: %d, Arrival Time: %d, Gender: %c, Preference: %c\n", request.player_id, request.arrival_time, request.gender, request.preference);
-        append_to_waiting_list(request);
-        //print all the indices
-        printf("waiting_list_index: %d\n", waiting_list_index);
-        printf("matched_list_index: %d\n", matched_list_index);
-        printf("checked_list_index: %d\n", checked_list_index);
-        printf("temp_checked_list_index: %d\n", temp_checked_list_index);
-    }
-    
-    // print waiting list
-    // for (int i = 0; i < waiting_list_index; ++i) {
-    //     printf("Player ID: %d, Arrival Time: %d, Gender: %c, Preference: %c\n", waiting_list[i].player_id, waiting_list[i].arrival_time , waiting_list[i].gender, waiting_list[i].preference);  
-    // }
+    // Bind the socket
+    bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
 
-    //print the matched list
-    for (int i = 0; i < matched_list_index; ++i) {
-        printf("Court Number: %d, Start Time: %d, End Time: %d, Number of Players: %d, Game Type: %c\n", matched_list[i].court_number, matched_list[i].start_time, matched_list[i].end_time, matched_list[i].number_of_players, matched_list[i].game_type);
-        for (int j = 0; j < matched_list[i].number_of_players; ++j) {
-            printf("Player ID: %d\n", matched_list[i].player_ids[j]);
+    // Listen for incoming connections
+    listen(server_socket, 5);
+
+    printf("Server listening on port 8080...\n");
+
+    // Number of threads to create
+    const int num_threads =100;
+
+    // Accept connections in parallel using OpenMP
+    #pragma omp parallel num_threads(num_threads)
+    {   
+        if (omp_get_thread_num() == 0) {
+            printf("Number of threads: %d\n", omp_get_num_threads());
+        }
+        // Each thread has its own copy of the server socket
+        int private_server_socket = server_socket;
+
+        // Each thread listens and accepts connections independently
+        #pragma omp for
+        for (int i = 0; i < num_threads; ++i) {
+            // Accept a connection
+            client_socket = accept(private_server_socket, (struct sockaddr*)&client_addr, &client_len);
+
+            // Handle the connection in a separate function
+            #pragma omp critical
+            handle_connection(client_socket, omp_get_thread_num());
         }
     }
-    // Close the file and free allocated memory
-    fclose(file);
-    free(line);
+
+    // Close the server socket when done
+    close(server_socket);
 
     return 0;
 }
+
+
+// int main() {
+//     initialize_courts();
+    
+//     FILE *file;
+//     char *line = NULL;
+//     size_t len = 0;
+//     ssize_t read;
+
+//     // Open the file for reading
+//     file = fopen("input.csv", "r");
+//     if (file == NULL) {
+//         fprintf(stderr, "Error opening the file\n");
+//         return 1;
+//     }
+
+//     // Ignore the first line
+//     if ((read = getline(&line, &len, file)) == -1) {
+//         fprintf(stderr, "Error reading the first line\n");
+//         fclose(file);
+//         free(line);
+//         return 1;
+//     }
+//     int not_much = 2;
+//     // Read and process each line
+//     while ((read = getline(&line, &len, file)) != -1) {
+//     // while(not_much > 0){
+//         Request request;
+//         sscanf(line, "%d,%d,%c,%c", &request.player_id, &request.arrival_time, &request.gender, &request.preference);
+
+//         // Do something with the Request struct (e.g., print the values)
+//         printf("Player ID: %d, Arrival Time: %d, Gender: %c, Preference: %c\n", request.player_id, request.arrival_time, request.gender, request.preference);
+//         append_to_waiting_list(request);
+//         //print all the indices
+//         printf("waiting_list_index: %d\n", waiting_list_index);
+//         printf("matched_list_index: %d\n", matched_list_index);
+//         printf("checked_list_index: %d\n", checked_list_index);
+//         printf("temp_checked_list_index: %d\n", temp_checked_list_index);
+//     }
+    
+//     // print waiting list
+//     // for (int i = 0; i < waiting_list_index; ++i) {
+//     //     printf("Player ID: %d, Arrival Time: %d, Gender: %c, Preference: %c\n", waiting_list[i].player_id, waiting_list[i].arrival_time , waiting_list[i].gender, waiting_list[i].preference);  
+//     // }
+
+//     //print the matched list
+//     for (int i = 0; i < matched_list_index; ++i) {
+//         printf("Court Number: %d, Start Time: %d, End Time: %d, Number of Players: %d, Game Type: %c\n", matched_list[i].court_number, matched_list[i].start_time, matched_list[i].end_time, matched_list[i].number_of_players, matched_list[i].game_type);
+//         for (int j = 0; j < matched_list[i].number_of_players; ++j) {
+//             printf("Player ID: %d\n", matched_list[i].player_ids[j]);
+//         }
+//     }
+//     // Close the file and free allocated memory
+//     fclose(file);
+//     free(line);
+
+//     return 0;
+// }
