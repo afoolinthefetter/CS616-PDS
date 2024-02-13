@@ -6,7 +6,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 filename="$1"
-client_executable="./demo_client"
+client_executable="./demo_client1"
 
 
 tail -n +2 "$filename" | while IFS=, read -r player_id arrival_time gender preference; do
