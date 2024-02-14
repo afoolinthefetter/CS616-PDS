@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-// #include <omp.h>
+#include <omp.h>
+#include <time.h>
+
 
 #define SERVER_PORT 8080
 
@@ -130,36 +132,36 @@ void make_match(){
     qsort(waiting_list, waiting_list_index, sizeof(Request), 
           (int (*)(const void*, const void*))compareArrivalTime);
     // Function to compare arrival times for qsort
-    
 
-    for(int i = 0; i < waiting_list_index; i++){
-        if (is_in_checked_list(waiting_list[i].player_id) == 1){
+    for(int k = 0; k < waiting_list_index; k++){
+        char preference = waiting_list[k].preference;
+
+        if (is_in_checked_list(waiting_list[k].player_id) == 1){
             continue;
         }
         
         //here we should make sure that the selected one can get an empty court
-        if (empty_court_ask(waiting_list[i].arrival_time) == 0){
+        if (empty_court_ask(waiting_list[k].arrival_time) == 0){
             continue;
         }
-
-
-        switch (waiting_list[i].preference)
+    
+        switch (preference)
         {
         case 'S':
-            match_for_single(waiting_list[i]);
+            match_for_single(waiting_list[k]);
             break;
         case 'D':
-            match_for_double(waiting_list[i]);
+            match_for_double(waiting_list[k]);
             break;
         case 'b':
-            match_for_single(waiting_list[i]);
+            match_for_single(waiting_list[k]);
             if (temp_checked_list_index == 0)
-                match_for_double(waiting_list[i]);
+                match_for_double(waiting_list[k]);
             break;
         default:
-            match_for_double(waiting_list[i]);
+            match_for_double(waiting_list[k]);
             if (temp_checked_list_index == 0)
-                match_for_single(waiting_list[i]);
+                match_for_single(waiting_list[k]);
             break;
         }
 
@@ -174,11 +176,13 @@ void make_match(){
     return;
 }
 
-int append_to_waiting_list(Request request){
+void append_to_waiting_list(Request request){
+    int return_value;
     waiting_list[waiting_list_index] = request;
     waiting_list_index++;
+    //print the request in matching list
     make_match();
-    return 1;
+    return;
 }
 
 //check if an index is in the checked list
@@ -387,9 +391,6 @@ void add_to_matched_list(){
         }
     }
 
-    //now we dont need the temp_checked_list anymore
-    //but we need to add it to the checked list in the make_match function
-    // temp_checked_list_index = 0;
     return;
 }
 
@@ -409,130 +410,38 @@ void handle_connection(int client_socket, int thread_id) {
     close(client_socket);
 }
 
-int main() {
-    initialize_courts();
-    
-    FILE *file;
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t read;
-
-    // Open the file for reading
-    file = fopen("input.csv", "r");
-    if (file == NULL) {
-        fprintf(stderr, "Error opening the file\n");
-        return 1;
-    }
-
-    // Ignore the first line
-    if ((read = getline(&line, &len, file)) == -1) {
-        fprintf(stderr, "Error reading the first line\n");
-        fclose(file);
-        free(line);
-        return 1;
-    }
-    int not_much = 2;
-    // Read and process each line
-    while ((read = getline(&line, &len, file)) != -1) {
-    // while(not_much > 0){
-        Request request;
-        sscanf(line, "%d,%d,%c,%c", &request.player_id, &request.arrival_time, &request.gender, &request.preference);
-        append_to_waiting_list(request);
-    }
-
-    //print the matched list
-    for (int i = 0; i < matched_list_index; ++i) {
-        printf("Court Number: %d, Start Time: %d, End Time: %d, Number of Players: %d, Game Type: %c\n", matched_list[i].court_number, matched_list[i].start_time, matched_list[i].end_time, matched_list[i].number_of_players, matched_list[i].game_type);
-        for (int j = 0; j < matched_list[i].number_of_players; ++j) {
-            printf("Player ID: %d\n", matched_list[i].player_ids[j]);
-        }
-    }
-
-    printf("number of matched: %d\n", matched_list_index);
-    // Close the file and free allocated memory
-    fclose(file);
-    free(line);
-
-    return 0;
-}
-
-
 // int main() {
-//     int server_socket, client_socket;
-//     struct sockaddr_in server_addr, client_addr;
-//     socklen_t client_len = sizeof(client_addr);
+//     initialize_courts();
+    
+//     FILE *file;
+//     char *line = NULL;
+//     size_t len = 0;
+//     ssize_t read;
 
-//     // Create a TCP socket
-//     server_socket = socket(AF_INET, SOCK_STREAM, 0);
-
-//     // Configure the server address
-//     server_addr.sin_family = AF_INET;
-//     server_addr.sin_addr.s_addr = INADDR_ANY;
-//     server_addr.sin_port = htons(8080);
-
-//     // Bind the socket
-//     bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
-
-//     // Listen for incoming connections
-//     listen(server_socket, 5);
-
-//     printf("Server listening on port 8080...\n");
-
-//     // Number of threads to create
-//     const int num_threads =100;
-
-//     // Accept connections in parallel using OpenMP
-//     #pragma omp parallel num_threads(num_threads)
-// {
-//     if (omp_get_thread_num() == 0) {
-//         printf("Number of threads: %d\n", omp_get_num_threads());
+//     // Open the file for reading
+//     file = fopen("input.csv", "r");
+//     if (file == NULL) {
+//         fprintf(stderr, "Error opening the file\n");
+//         return 1;
 //     }
 
-//     // Each thread has its own copy of the server socket
-//     int private_server_socket = server_socket;
-
-//     // Each thread listens and accepts connections independently
-//     #pragma omp for
-//     for (int i = 0; i < num_threads; ++i) {
-//         int thread_id = omp_get_thread_num();
-//         int thirty_minute_notion = 30;
+//     // Ignore the first line
+//     if ((read = getline(&line, &len, file)) == -1) {
+//         fprintf(stderr, "Error reading the first line\n");
+//         fclose(file);
+//         free(line);
+//         return 1;
+//     }
+//     int not_much = 2;
+//     // Read and process each line
+//     while ((read = getline(&line, &len, file)) != -1) {
+//     // while(not_much > 0){
 //         Request request;
-//         int matched_or_not = 0;
-
-//         // Accept a connection
-//         int client_socket = accept(private_server_socket, (struct sockaddr*)&client_addr, &client_len);
-
-//         // Handle the connection in a separate function
-//         char buffer[1024];
-//         int bytes_received;
-
-//         // Receive data from the client
-//         bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
-
-//         //get the message from the client and parse it into request struct
-//         sscanf(buffer, "%d,%d,%c,%c", &request.player_id, &request.arrival_time, &request.gender, &request.preference);
-//         //print the request
-//         printf("Player ID: %d, Arrival Time: %d, Gender: %c, Preference: %c\n", request.player_id, request.arrival_time, request.gender, request.preference);
-//         #pragma omp critical
-//         {
-//             append_to_waiting_list(request);
-//             printf("Done appending to waiting list\n");
-//         }
-
-//         if (matched_or_not == 0) {
-//             char message[1024];
-//             sprintf(message, "Timeout Sorry, you have not been matched yet\n");
-//             send(client_socket, message, strlen(message), 0);
-//         }
-
-//         // Close the client socket when done
-//         close(client_socket);
+//         sscanf(line, "%d,%d,%c,%c", &request.player_id, &request.arrival_time, &request.gender, &request.preference);
+//         append_to_waiting_list(request);
 //     }
-// }
 
-//     // Close the server socket when done
-//     close(server_socket);
-//     //print matched list
+//     //print the matched list
 //     for (int i = 0; i < matched_list_index; ++i) {
 //         printf("Court Number: %d, Start Time: %d, End Time: %d, Number of Players: %d, Game Type: %c\n", matched_list[i].court_number, matched_list[i].start_time, matched_list[i].end_time, matched_list[i].number_of_players, matched_list[i].game_type);
 //         for (int j = 0; j < matched_list[i].number_of_players; ++j) {
@@ -540,7 +449,118 @@ int main() {
 //         }
 //     }
 
+//     printf("number of matched: %d\n", matched_list_index);
+//     // Close the file and free allocated memory
+//     fclose(file);
+//     free(line);
+
 //     return 0;
 // }
+
+
+int main() {
+    initialize_courts();
+
+    int server_socket, client_socket;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t client_len = sizeof(client_addr);
+
+    // Create a TCP socket
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    // Configure the server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(8080);
+
+    // Bind the socket
+    bind(server_socket, (struct sockaddr*)&server_addr, sizeof(server_addr));
+
+    // Listen for incoming connections
+    listen(server_socket, 5);
+
+    printf("Server listening on port 8080...\n");
+
+    // Number of threads to create
+    const int num_threads =100;
+
+    // Accept connections in parallel using OpenMP
+    #pragma omp parallel num_threads(num_threads)
+{
+    if (omp_get_thread_num() == 0) {
+        printf("Number of threads: %d\n", omp_get_num_threads());
+    }
+
+    // Each thread has its own copy of the server socket
+    int private_server_socket = server_socket;
+
+    // Each thread listens and accepts connections independently
+    #pragma omp for
+    for (int i = 0; i < num_threads; ++i) {
+        int thread_id = omp_get_thread_num();
+        int thirty_minute_notion = 30;
+        Request request;
+        int matched_or_not = 0;
+
+        // Accept a connection
+        int client_socket = accept(private_server_socket, (struct sockaddr*)&client_addr, &client_len);
+
+        // Handle the connection in a separate function
+        char buffer[1024];
+        int bytes_received;
+
+        // Receive data from the client
+        bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
+
+        //get the message from the client and parse it into request struct
+        sscanf(buffer, "%d,%d,%c,%c", &request.player_id, &request.arrival_time, &request.gender, &request.preference);
+        
+        //print the request
+        printf("Player ID: %d, Arrival Time: %d, Gender: %c, Preference: %c\n", request.player_id, request.arrival_time, request.gender, request.preference);
+        
+        #pragma omp critical
+        {
+            append_to_waiting_list(request);
+        }
+        time_t startTime = time(NULL); // Get the current time
+        
+        int matched = 0;
+        char message[1024];
+        while (1) {
+            time_t currentTime = time(NULL);
+            //check of my player has been matched
+            //have to check the matched player list for this
+            for (int i = 0; i < matched_list_index; ++i) {
+                for (int j = 0; j < matched_list[i].number_of_players; ++j) {
+                    if (matched_list[i].player_ids[j] == request.player_id){
+                        matched = 1;
+                        sprintf(message, "Court Number: %d, Start Time: %d, End Time: %d, Number of Players: %d, Game Type: %c\n", matched_list[i].court_number, matched_list[i].start_time, matched_list[i].end_time, matched_list[i].number_of_players, matched_list[i].game_type);
+                        break;
+                    }
+                }
+            }
+
+            if (currentTime - startTime >= 5) {
+                break;
+            }
+
+            // to avoid unnecessary CPU usage
+            sleep(0.25);
+        }
+        if (matched == 1){
+            send(client_socket, message, strlen(message), 0);
+        }else{
+            send(client_socket, "Request Timed-out", strlen("Request Timed-out"), 0);
+        }
+
+        // Close the client socket when done
+        close(client_socket);
+    }
+}
+    // Close the server socket when done
+    close(server_socket);
+    printf("Matched list index: %d\n", matched_list_index);
+    return 0;
+}
 
 
