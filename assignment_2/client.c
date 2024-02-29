@@ -1,12 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <arpa/inet.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 
-int main() {
+void send_message_to_server(const char *message) {
     int client_socket;
     struct sockaddr_in server_addr;
-    char message[] = "Hello, Server!";
     char buffer[1024];
 
     // Create a TCP socket
@@ -29,6 +29,16 @@ int main() {
 
     // Close the client socket when done
     close(client_socket);
+}
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <message>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    // Call the function to send the message to the server
+    send_message_to_server(argv[1]);
 
     return 0;
 }
