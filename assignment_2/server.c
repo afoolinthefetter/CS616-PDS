@@ -482,7 +482,7 @@ int main() {
     printf("Server listening on port 8080...\n");
 
     // Number of threads to create
-    const int num_threads =50;
+    const int num_threads =200;
 
     // Accept connections in parallel using OpenMP
     #pragma omp parallel num_threads(num_threads)
