@@ -51,6 +51,7 @@ typedef struct {
     int* player_ids;
     int number_of_players;
     char game_type;
+    char* winner;
 }Match;
 
 //initialize the list needed for below
@@ -365,12 +366,21 @@ void add_to_matched_list(){
         player_ids[i] = temp_checked_list[i].player_id;
     }
 
-
+    char* winner_text = NULL;
+    winner_text = (char*)malloc(20);
+    if (temp_checked_list_index == 2){
+        sprintf(winner_text, "%d", player_ids[0]);
+    }
+    else if (temp_checked_list_index == 4){
+        sprintf(winner_text, "%d,%d", player_ids[0], player_ids[1]);
+    }
     //insert once on the matched list
     matched_list[matched_list_index].court_number = court_number;
     matched_list[matched_list_index].start_time = start_time;
     matched_list[matched_list_index].end_time = end_time;
     matched_list[matched_list_index].player_ids = player_ids;
+    matched_list[matched_list_index].winner = malloc(strlen(winner_text) + 1);
+    strcpy(matched_list[matched_list_index].winner, winner_text);
     matched_list[matched_list_index].number_of_players = temp_checked_list_index;
     if (temp_checked_list_index == 2){
         matched_list[matched_list_index].game_type = 'S';
@@ -482,7 +492,7 @@ int main() {
     printf("Server listening on port 8080...\n");
 
     // Number of threads to create
-    const int num_threads =50;
+    const int num_threads =200;
 
     // Accept connections in parallel using OpenMP
     #pragma omp parallel num_threads(num_threads)
@@ -534,13 +544,13 @@ int main() {
                 for (int j = 0; j < matched_list[i].number_of_players; ++j) {
                     if (matched_list[i].player_ids[j] == request.player_id){
                         matched = 1;
-                        sprintf(message, "Court Number: %d, Start Time: %d, End Time: %d, Number of Players: %d, Game Type: %c\n", matched_list[i].court_number, matched_list[i].start_time, matched_list[i].end_time, matched_list[i].number_of_players, matched_list[i].game_type);
+                        sprintf(message, "Player Id: %d, Court Number: %d, Start Time: %d, End Time: %d, Winner: %s ,Number of Players: %d, Game Type: %c\n", request.player_id, matched_list[i].court_number, matched_list[i].start_time, matched_list[i].end_time, matched_list[i].winner, matched_list[i].number_of_players, matched_list[i].game_type);
                         break;
                     }
                 }
             }
 
-            if (currentTime - startTime >= 5) {
+            if (currentTime - startTime >= 20) {
                 break;
             }
 

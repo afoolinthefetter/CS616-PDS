@@ -11,7 +11,7 @@ python_script="client.py"
 tail -n +2 "$filename" | while IFS=, read -r player_id arrival_time gender preference; do
 
     message="$player_id,$arrival_time,$gender,$preference"
-    echo  "$client_executable" "$message"
+    echo  p"$client_executable" "$message"
     python3 "$python_script" "$message" &
 
     sleep 1

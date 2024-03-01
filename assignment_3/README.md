@@ -1,10 +1,10 @@
-# OpenMP based concurrent connection handler
+# MPI communication on client side and OpenMP based concurrent connection handler 
 
-This application is responsible for tennis allocation where the server side uses opennp for loop based parallelism to handle connection. On the client side, we read a csv file and create seperate process for each row in the csv file.
+This application is responsible for tennis allocation where the server side uses opennp for loop based parallelism to handle connection. On the client side, we read a csv file and create seperate process for each row in the csv file. At the end, the players who lost the game will wish the winner Congractulations and the winner will reply with a thank you message.
 
 ## Features
 
-- Reads a file and then created threads to populate waitlist.
+- Makes MPI processes for the requests
 - The requests are processed through a sequential unit with the help of mutex lock.
 - Threads are there to handle each connection seperately.
 - Shell script responsible for running process for each row in <input.csv> file
@@ -21,12 +21,30 @@ Run the server
 ./server
 ```
 
-Complie the client
+Complie the client explicitly
+We need mpi4py library to run the client side of the program.
+
+Create Virtual Environment
 ```bash
-gcc-13 client.c -o client
+python3 -m virtualenv venv
 ```
 
-Run the shellscript to run process for each row in the csv file (One should edit the sh script for cleint-executable filename in case it is other than `client`)
+Activate Virtual Environment
+```bash
+source venv/bin/activate
+```
+
+Pip install mpi4py
+```bash
+pip3 install mpi4py
+```
+
+MPI Run the client
+```bash
+mpiexec -n <number of requests> --oversubscribe python3 client.py
+```
+
+The 
 ```bash
 sh sendrequest.sh <input_file.csv>
 ```
@@ -43,13 +61,17 @@ sh sendrequest.sh <input_file.csv>
 | 4         | 1            | F      | S          |
 
 
-#### Sample Output
+#### Sample Output for reply from the server
 
 | Status |Response                                          |
 |--------|-------------------------------------------|
 |Failure |Request Timed-out                                  |
-|Success |Court Number: 2, Start Time: 57, End Time: 72, Number of Players: 4, Game Type: D|
+|Success |Court Number: 2, Start Time: 57, End Time: 72, Winner: 12,15 ,Number of Players: 4, Game Type: D|
+|Success |Court Number: 3, Start Time: 17, End Time: 22, Winner: 6 ,Number of Players: 2, Game Type: S|
 
+
+
+#### Sample Output for Congratulations
 
 
 
