@@ -372,7 +372,7 @@ void add_to_matched_list(){
         sprintf(winner_text, "%d", player_ids[0]);
     }
     else if (temp_checked_list_index == 4){
-        sprintf(winner_text, "%d,%d", player_ids[0], player_ids[1]);
+        sprintf(winner_text, "%d %d", player_ids[0], player_ids[1]);
     }
     //insert once on the matched list
     matched_list[matched_list_index].court_number = court_number;
@@ -544,7 +544,7 @@ int main() {
                 for (int j = 0; j < matched_list[i].number_of_players; ++j) {
                     if (matched_list[i].player_ids[j] == request.player_id){
                         matched = 1;
-                        sprintf(message, "Player Id: %d, Court Number: %d, Start Time: %d, End Time: %d, Winner: %s ,Number of Players: %d, Game Type: %c\n", request.player_id, matched_list[i].court_number, matched_list[i].start_time, matched_list[i].end_time, matched_list[i].winner, matched_list[i].number_of_players, matched_list[i].game_type);
+                        sprintf(message, "Player Id: %d, Court Number: %d, Start Time: %d, End Time: %d, Winner: %s, Number of Players: %d, Game Type: %c\n", request.player_id, matched_list[i].court_number, matched_list[i].start_time, matched_list[i].end_time, matched_list[i].winner, matched_list[i].number_of_players, matched_list[i].game_type);
                         break;
                     }
                 }

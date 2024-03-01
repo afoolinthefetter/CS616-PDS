@@ -1,19 +1,10 @@
-#!/bin/env python3
+#!/bin/bash
 
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <csv_file>"
-    exit 1
-fi
+# Replace 'your_file.csv' with the actual CSV file path
+csv_file="input.csv"
 
-filename="$1"
-python_script="client.py"
+# Get the number of lines in the CSV file
+number_of_requests=$(wc -l < "$csv_file")
 
-tail -n +2 "$filename" | while IFS=, read -r player_id arrival_time gender preference; do
-
-    message="$player_id,$arrival_time,$gender,$preference"
-    echo  p"$client_executable" "$message"
-    python3 "$python_script" "$message" &
-
-    sleep 1
-
-done
+# Run the MPI command with the count
+mpiexec -n "$number_of_requests" --oversubscribe python3 client.py

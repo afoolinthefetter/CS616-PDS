@@ -38,15 +38,18 @@ Pip install mpi4py
 ```bash
 pip3 install mpi4py
 ```
+After `venv` and installing requirements
 
-MPI Run the client
+* MPI Run the client explicitly
 ```bash
 mpiexec -n <number of requests> --oversubscribe python3 client.py
 ```
 
-The 
+OR 
+
+* Use the shell script to do so (RECOMMENDED as it conuts the requests and then sets up MPI accordingly) 
 ```bash
-sh sendrequest.sh <input_file.csv>
+sh sendrequest.sh
 ```
 
 ## Input and Output
@@ -60,6 +63,8 @@ sh sendrequest.sh <input_file.csv>
 | 3         | 1            | F      | b          |
 | 4         | 1            | F      | S          |
 
+##### Constraints
+The values for Arrival Time and Player IDs are integers. You can have any value fot them and they do not need to be continous. The preferences can have values D, S, B, and b. The genders should be eithwe M or F.
 
 #### Sample Output for reply from the server
 
@@ -69,9 +74,11 @@ sh sendrequest.sh <input_file.csv>
 |Success |Court Number: 2, Start Time: 57, End Time: 72, Winner: 12,15 ,Number of Players: 4, Game Type: D|
 |Success |Court Number: 3, Start Time: 17, End Time: 22, Winner: 6 ,Number of Players: 2, Game Type: S|
 
+#### Understanding
+For a Doubles match, Winner will consist of two players in the same team. In case of a Singles match, it will be just one player's id.
 
 
 #### Sample Output for Congratulations
+The receiver will print this message after it recerives the congractulations message. The Source Rank is obtained from the `MPI.Status()` and the player id is attached in the message beforehand.
 
-
-
+`Source Rank: 40 Player Id: 60 -- TO -> Destination Rank: 123 Player Id: 143`

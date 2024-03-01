@@ -11,25 +11,37 @@ signal = 0
 rank_player_id_map_file = "map.json"
 
 my_game_size = 0
-my_winner = 0
-my_winner_rank = 0
+my_winners = []
+my_winner_ranks = []
 player_id = 0
 number_of_players = 0
-status = MPI.Status()
+
+
+status1 = MPI.Status()
+status2 = MPI.Status()
 
 congratulations_text = "Congratulations on winning the game!"
 reply_text = "Thank You!"
 
-# def wish_winner(send_to_rank: int):
-#     comm.send(congratulations_text, dest=send_to_rank, tag=1)
-#     print(f"Wish From {rank} To {send_to_rank}")
-#     msg = comm.recv(source=send_to_rank, tag=2)
-#     print(f"Reply received By {rank} from {send_to_rank}")
+def wish_winner(send_to_rank):
+    msg = congratulations_text + "Regards, " + str(player_id)
+    for rank in send_to_rank:
+        comm.send(msg, dest=rank, tag=1)
+    return
 
-# def receive_wish(number_of_players: int):
-#     global status
-#     if number_of_players == 4:
-#         for i in range(2):
+def get_wish(number_of_players: int):
+    if number_of_players == 2:
+        msg1 = comm.recv(source=MPI.ANY_SOURCE, tag=1, status=status1)
+        sender_player_id = msg1.split(', ')[1]
+        print(f"Source Rank: {status1.Get_source()} Player Id: {sender_player_id} -- TO -> Destination Rank: {rank} Player Id: {player_id}")
+    else:
+        msg1 = comm.recv(source=MPI.ANY_SOURCE, tag=1, status=status1)
+        sender_player_id = msg1.split(', ')[1]
+        print(f"Source Rank: {status1.Get_source()} Player Id: {sender_player_id} -- TO -> Destination Rank: {rank} Player Id: {player_id}")
+        msg2 = comm.recv(source=MPI.ANY_SOURCE, tag=1, status=status2)
+        sender_player_id = msg2.split(', ')[1]
+        print(f"Source Rank: {status2.Get_source()} Player Id: {sender_player_id} -- TO -> Destination Rank: {rank} Player Id: {player_id}")
+    return
     
 
 
@@ -53,27 +65,37 @@ def send_message_to_server(message):
 
     client_socket.close()
 
-    # if received_data.decode() != "Request Timed-out":
-    #     #Player Id: 127, Court Number: 3, Start Time: 84, End Time: 99, Winner: 147 ,Number of Players: 4, Game Type: D
-    #     #get the winner's id from this reply
-    #     global my_winner
-    #     my_winner = received_data.decode().split(',')[4]
-    #     my_winner = int(my_winner.split(' ')[2])
-    #     number_of_players = received_data.decode().split(',')[5]
-    #     number_of_players = int(number_of_players.split(' ')[3])
+    if received_data.decode() != "Request Timed-out":
+        #Player Id: 127, Court Number: 3, Start Time: 84, End Time: 99, Winner: 147 132, Number of Players: 4, Game Type: D
+        #get the winner's id from this reply
+        global my_winners
+        global number_of_players
+        global my_winner_ranks
+        
+        winner = received_data.decode().split(',')[4]
+        
+        number_of_players = received_data.decode().split(',')[5]
+        number_of_players = int(number_of_players.split(' ')[4])
+        winner = winner.split(' ')
+        my_winners.append(int(winner[2]))
+        if number_of_players == 4:
+            my_winners.append(int(winner[3]))
+        
+        if player_id in my_winners:
+            get_wish(int(number_of_players))
+            return
+        else:        
+        # open json file
+            with open(rank_player_id_map_file, 'r') as file:
+                data = json.load(file)
 
-    #     #open json file
-    #     with open(rank_player_id_map_file, 'r') as file:
-    #         data = json.load(file)
-    #         for item in data:
-    #             if int(item[1]) == my_winner:
-    #                 my_winner_rank = item[0]
-    #                 break
-
-    #     if my_winner == player_id:
-    #         receive_wish(number_of_players)
-    #     else:
-    #         wish_winner(my_winner_rank)
+                for my_winner_value in my_winners:
+                    for item in data:
+                        if int(item[1]) == my_winner_value:
+                            my_winner_ranks.append(item[0])
+                            break
+                            
+            wish_winner(my_winner_ranks)
             
 
     # Close the client socket when done
