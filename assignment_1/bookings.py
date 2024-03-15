@@ -134,6 +134,7 @@ def mark_court_occupied(ids: list):
     count = len(arrival_times)
     unique_genders = set(player['gender'] for player in players_getting_court)
     player_ids = [player['player_id'] for player in players_getting_court]
+    print(players_getting_court)
     if len(unique_genders) == 1:
         single_gender = unique_genders.pop()  # Retrieve the single gender
         if single_gender == 'M':
