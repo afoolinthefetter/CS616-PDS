@@ -28,12 +28,8 @@ type Coordinator struct {
 	reduceTask map[int]*Task
 }
 
-func (c *Coordinator) InitWorker(
-	args *InitWorkerArgs,
-	reply *InitWorkerReply,
-) error {
-	reply.NMap = c.nMap
-	reply.NReduce = c.nReduce
+func (c *Coordinator) InitWorker(args *InitWorkerArgs, reply *InitWorkerReply) error {
+	reply.NMap, reply.NReduce = c.nMap, c.nReduce
 	return nil
 }
 

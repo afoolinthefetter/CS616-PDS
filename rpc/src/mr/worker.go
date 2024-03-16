@@ -19,9 +19,15 @@ type KeyValue struct {
 
 type ByKey []KeyValue
 
-func (a ByKey) Len() int           { return len(a) }
-func (a ByKey) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByKey) Less(i, j int) bool { return a[i].Key < a[j].Key }
+func (a ByKey) Len() int {
+	return len(a)
+}
+func (a ByKey) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+func (a ByKey) Less(i, j int) bool {
+	return a[i].Key < a[j].Key
+}
 
 func ihash(key string) int {
 	h := fnv.New32a()
@@ -35,11 +41,7 @@ func Worker(
 ) {
 	initWorkerArgs := InitWorkerArgs{}
 	initWorkerReply := InitWorkerReply{}
-	call(
-		"Coordinator.InitWorker",
-		&initWorkerArgs,
-		&initWorkerReply,
-	)
+	call("Coordinator.InitWorker", &initWorkerArgs, &initWorkerReply)
 	nMap := initWorkerReply.NMap
 	nReduce := initWorkerReply.NReduce
 
