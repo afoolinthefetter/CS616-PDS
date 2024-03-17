@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-
-
 func ihash(key string) int {
 	h := fnv.New32a()
 	h.Write([]byte(key))
@@ -32,9 +30,9 @@ func Worker(
 	for {
 		getTaskArgs := GetTaskArgs{}
 		getTaskReply := GetTaskReply{}
-		call("Coordinator.GetTask",&getTaskArgs,&getTaskReply,)
+		call("Coordinator.GetTask", &getTaskArgs, &getTaskReply)
 		if !getTaskReply.Scheduled {
-			time.Sleep(time.Second*2)
+			time.Sleep(time.Second * 2)
 			continue
 		}
 
@@ -49,7 +47,7 @@ func Worker(
 			fmt.Println("Map Length:", len(mapResult), ", Key:", mapResult[0].Key, ", Value:", mapResult[0].Value)
 			outputFileList := []*os.File{}
 			for reduceId := 0; reduceId < nReduce; reduceId++ {
-				resultFilename := fmt.Sprintf("mr-%d-%d",taskId,reduceId)
+				resultFilename := fmt.Sprintf("mr-%d-%d", taskId, reduceId)
 				tempFile, err := os.Create(resultFilename)
 				if err != nil {
 					break
@@ -71,7 +69,7 @@ func Worker(
 			}
 
 			for reduceId := 0; reduceId < nReduce; reduceId++ {
-				resultFilename := fmt.Sprintf("mr-%d-%d",taskId,reduceId)
+				resultFilename := fmt.Sprintf("mr-%d-%d", taskId, reduceId)
 				outputFile := outputFileList[reduceId]
 				os.Rename(outputFile.Name(), resultFilename)
 				outputFile.Close()
@@ -81,7 +79,7 @@ func Worker(
 		if phase == "reduce" {
 			reduceInput := []KeyValue{}
 			for mapId := 0; mapId < nMap; mapId++ {
-				inputFilename := fmt.Sprintf("mr-%d-%d",mapId,taskId)
+				inputFilename := fmt.Sprintf("mr-%d-%d", mapId, taskId)
 
 				inputFile, openErr := os.Open(inputFilename)
 				if openErr != nil {
@@ -100,11 +98,11 @@ func Worker(
 
 			sort.Sort(ByKey(reduceInput))
 
-			outputFileName := fmt.Sprintf("mr-out-%d",taskId)
+			outputFileName := fmt.Sprintf("mr-out-%d", taskId)
 
 			outputFile, err := os.Create(outputFileName)
 			if err != nil {
-			    break
+				break
 			}
 			i := 0
 			for i < len(reduceInput) {
