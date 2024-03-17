@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash/fnv"
-	"io/ioutil"
 	"log"
 	"net/rpc"
 	"os"
@@ -12,22 +11,7 @@ import (
 	"time"
 )
 
-type KeyValue struct {
-	Key   string
-	Value string
-}
 
-type ByKey []KeyValue
-
-func (a ByKey) Len() int {
-	return len(a)
-}
-func (a ByKey) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-func (a ByKey) Less(i, j int) bool {
-	return a[i].Key < a[j].Key
-}
 
 func ihash(key string) int {
 	h := fnv.New32a()
@@ -48,16 +32,13 @@ func Worker(
 	for {
 		getTaskArgs := GetTaskArgs{}
 		getTaskReply := GetTaskReply{}
-		call(
-			"Coordinator.GetTask",
-			&getTaskArgs,
-			&getTaskReply,
-		)
+		call("Coordinator.GetTask",&getTaskArgs,&getTaskReply,)
 		if !getTaskReply.Scheduled {
-			time.Sleep(time.Second)
+			time.Sleep(time.Second*2)
 			continue
 		}
 
+		//extract the reply
 		taskId := getTaskReply.TaskId
 		phase := getTaskReply.Phase
 		filename := getTaskReply.Filename
@@ -65,19 +46,21 @@ func Worker(
 
 		if phase == "map" {
 			mapResult := mapf(filename, content)
+			fmt.Println("Map Length:", len(mapResult), ", Key:", mapResult[0].Key, ", Value:", mapResult[0].Value)
 			outputFileList := []*os.File{}
 			for reduceId := 0; reduceId < nReduce; reduceId++ {
-				resultFilename := fmt.Sprintf(
-					"mr-%d-%d",
-					taskId,
-					reduceId,
-				)
-				tempFile, _ := ioutil.TempFile("", resultFilename)
+				resultFilename := fmt.Sprintf("mr-%d-%d",taskId,reduceId)
+				tempFile, err := os.Create(resultFilename)
+				if err != nil {
+					break
+				}
 				outputFileList = append(outputFileList, tempFile)
 			}
 
 			for _, kv := range mapResult {
-				reduceId := ihash(kv.Key) % nReduce
+				ihashV := ihash(kv.Key)
+				//fmt.Println("some ihashV: ",ihashV)
+				reduceId := ihashV % nReduce
 				outputFile := outputFileList[reduceId]
 
 				enc := json.NewEncoder(outputFile)
@@ -88,11 +71,7 @@ func Worker(
 			}
 
 			for reduceId := 0; reduceId < nReduce; reduceId++ {
-				resultFilename := fmt.Sprintf(
-					"mr-%d-%d",
-					taskId,
-					reduceId,
-				)
+				resultFilename := fmt.Sprintf("mr-%d-%d",taskId,reduceId)
 				outputFile := outputFileList[reduceId]
 				os.Rename(outputFile.Name(), resultFilename)
 				outputFile.Close()
@@ -102,11 +81,7 @@ func Worker(
 		if phase == "reduce" {
 			reduceInput := []KeyValue{}
 			for mapId := 0; mapId < nMap; mapId++ {
-				inputFilename := fmt.Sprintf(
-					"mr-%d-%d",
-					mapId,
-					taskId,
-				)
+				inputFilename := fmt.Sprintf("mr-%d-%d",mapId,taskId)
 
 				inputFile, openErr := os.Open(inputFilename)
 				if openErr != nil {
@@ -125,12 +100,12 @@ func Worker(
 
 			sort.Sort(ByKey(reduceInput))
 
-			outputFileName := fmt.Sprintf(
-				"mr-out-%d",
-				taskId,
-			)
-			outputFile, _ := ioutil.TempFile("", outputFileName)
+			outputFileName := fmt.Sprintf("mr-out-%d",taskId)
 
+			outputFile, err := os.Create(outputFileName)
+			if err != nil {
+			    break
+			}
 			i := 0
 			for i < len(reduceInput) {
 				j := i + 1
@@ -157,11 +132,7 @@ func Worker(
 			TaskId: taskId,
 		}
 		CommitTaskReply := CommitTaskReply{}
-		call(
-			"Coordinator.CommitTask",
-			&CommitTaskArgs,
-			&CommitTaskReply,
-		)
+		call("Coordinator.CommitTask", &CommitTaskArgs, &CommitTaskReply)
 		if CommitTaskReply.Done {
 			return
 		}
@@ -169,7 +140,6 @@ func Worker(
 }
 
 func call(rpcname string, args interface{}, reply interface{}) bool {
-	// c, err := rpc.DialHTTP("tcp", "127.0.0.1"+":1234")
 	sockname := coordinatorSock()
 	c, err := rpc.DialHTTP("unix", sockname)
 	if err != nil {

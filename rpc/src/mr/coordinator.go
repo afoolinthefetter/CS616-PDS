@@ -33,7 +33,7 @@ func (c *Coordinator) InitWorker(args *InitWorkerArgs, reply *InitWorkerReply) e
 	return nil
 }
 
-func (c *Coordinator) heartbeat() {
+func (c *Coordinator) monitorTasks() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -153,19 +153,19 @@ func MakeCoordinator(files []string, nReduce int) *Coordinator {
 		reduceTask: make(map[int]*Task),
 	}
 
-	for index, filename := range files {
-		file, err := os.Open(filename)
+	for index, eachFile := range files {
+		file, err := os.Open(eachFile)
 		if err != nil {
-			log.Fatalf("cannot open %v", filename)
+			log.Fatalf("cannot open %v", eachFile)
 		}
 		content, err := ioutil.ReadAll(file)
 		if err != nil {
-			log.Fatalf("cannot read %v", filename)
+			log.Fatalf("cannot read %v", eachFile)
 		}
 		file.Close()
 
 		c.mapTask[index] = &Task{
-			filename: filename,
+			filename: eachFile,
 			content:  string(content),
 			status:   "idle",
 		}
@@ -179,7 +179,7 @@ func MakeCoordinator(files []string, nReduce int) *Coordinator {
 
 	go func() {
 		for {
-			c.heartbeat()
+			c.monitorTasks()
 			time.Sleep(time.Second)
 		}
 	}()
