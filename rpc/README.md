@@ -71,3 +71,7 @@ This function represents the essential behavior of a worker node in a MapReduce 
 
 
 
+#### References
+
+- https://github.com/ColorsWind/6.824-LABS-2022/tree/master 
+- https://github.com/xiaoyang-sde/raft-kv 
